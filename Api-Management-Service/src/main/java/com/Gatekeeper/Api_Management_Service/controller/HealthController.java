@@ -2,7 +2,6 @@ package com.Gatekeeper.Api_Management_Service.controller;
 
 import com.Gatekeeper.Api_Management_Service.dto.responseDto.HealthResponse;
 import com.Gatekeeper.Api_Management_Service.service.HealthService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
