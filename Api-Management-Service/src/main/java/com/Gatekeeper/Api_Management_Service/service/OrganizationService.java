@@ -3,6 +3,7 @@ package com.Gatekeeper.Api_Management_Service.service;
 import com.Gatekeeper.Api_Management_Service.dto.requestDto.OrganizationRequest;
 import com.Gatekeeper.Api_Management_Service.dto.requestDto.OrganizationStatusRequest;
 import com.Gatekeeper.Api_Management_Service.dto.requestDto.TenantAdminRequest;
+import com.Gatekeeper.Api_Management_Service.dto.requestDto.TenantOrganizationRequest;
 import com.Gatekeeper.Api_Management_Service.dto.responseDto.OrganizationResponse;
 import com.Gatekeeper.Api_Management_Service.dto.responseDto.TenantAdminResponse;
 import com.Gatekeeper.Api_Management_Service.entity.ManagementUser;
@@ -29,12 +30,14 @@ public class OrganizationService {
     private final ManagementUserRepository managementUserRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TenantContext tenantContext;
 
-    public OrganizationService(OrganizationRepository organizationRepository, ManagementUserRepository managementUserRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public OrganizationService(OrganizationRepository organizationRepository, ManagementUserRepository managementUserRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, TenantContext tenantContext) {
         this.organizationRepository = organizationRepository;
         this.managementUserRepository = managementUserRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.tenantContext = tenantContext;
     }
 
     @Transactional
@@ -180,6 +183,28 @@ public class OrganizationService {
     private ManagementUser getTenantAdminEntity(Long id){
         getOrganization(id);
         return managementUserRepository.findByOrganizationId(id).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Tenant Administrator Not Found"));
+    }
+
+    @Transactional(readOnly = true)
+    public OrganizationResponse getOwnOrganization(){
+        return OrganizationResponse.from(tenantContext.getOrganization());
+    }
+
+    @Transactional
+    public OrganizationResponse updateOwnOrganization(TenantOrganizationRequest request){
+        long startedAt=System.nanoTime();
+
+        Organization organization=tenantContext.getOrganization();
+
+        if (!organization.getName().equalsIgnoreCase(request.getName()) && organizationRepository.existsByNameIgnoreCase(request.getName())){
+            throw new ApiException(HttpStatus.CONFLICT,"Organization name already exists");
+        }
+
+        organization.setName(request.getName());
+        organization.setUpdated_at(LocalDateTime.now());
+
+        return OrganizationResponse.from(organization);
+
     }
 
     private Organization getOrganization(Long id){
