@@ -4,10 +4,8 @@ import com.Gatekeeper.Api_Management_Service.dto.requestDto.HeaderRuleRequest;
 import com.Gatekeeper.Api_Management_Service.dto.requestDto.RouteRequest;
 import com.Gatekeeper.Api_Management_Service.dto.requestDto.RouteStatusRequest;
 import com.Gatekeeper.Api_Management_Service.dto.responseDto.RouteResponse;
-import com.Gatekeeper.Api_Management_Service.entity.ApiRoute;
-import com.Gatekeeper.Api_Management_Service.entity.Organization;
-import com.Gatekeeper.Api_Management_Service.entity.RouteConfigurationVersion;
-import com.Gatekeeper.Api_Management_Service.entity.RouteHeaderRule;
+import com.Gatekeeper.Api_Management_Service.dto.responseDto.RouteVersionResponse;
+import com.Gatekeeper.Api_Management_Service.entity.*;
 import com.Gatekeeper.Api_Management_Service.exception.ApiException;
 import com.Gatekeeper.Api_Management_Service.repository.ApiRouteRepository;
 import com.Gatekeeper.Api_Management_Service.repository.RouteConfigurationVersionRepository;
@@ -28,6 +26,13 @@ public class RouteService {
     private final ApiRouteRepository apiRouteRepository;
     private RouteConfigurationVersionRepository versionRepository;
     private final ObjectMapper objectMapper;
+
+    public RouteService(ObjectMapper objectMapper, RouteConfigurationVersionRepository versionRepository, ApiRouteRepository apiRouteRepository, TenantContext tenantContext) {
+        this.objectMapper = objectMapper;
+        this.versionRepository = versionRepository;
+        this.apiRouteRepository = apiRouteRepository;
+        this.tenantContext = tenantContext;
+    }
 
     @Transactional
     public RouteResponse create(RouteRequest request){
@@ -89,6 +94,21 @@ public class RouteService {
         saveVersion(route,"UPDATED");
 
         return RouteResponse.from(route);
+
+    }
+
+    @Transactional(readOnly = true)
+    public List<RouteVersionResponse> getVersions(String routeId){
+        Organization organization=tenantContext.getOrganization();
+
+        List<RouteVersionResponse> responses=new ArrayList<RouteVersionResponse>();
+        List<RouteConfigurationVersion> versions=versionRepository.findAllByOrganizationIdAndRouteIdOrderByVersionNumberDesc(organization.getId(),routeId);
+
+        for (RouteConfigurationVersion version : versions){
+            responses.add(RouteVersionResponse.from(version));
+        }
+
+        return responses;
 
     }
 
@@ -236,6 +256,11 @@ public class RouteService {
             responses.add(RouteResponse.from(route));
         }
         return responses;
+    }
+
+    @Transactional(readOnly = true)
+    public List<RouteResponse> findAllActiveForGateway(){
+        return toResponses((apiRouteRepository.findAllByActiveTrueAndOrganizationStatus(OrganizationStatus.ACTIVE)));
     }
 
 }
