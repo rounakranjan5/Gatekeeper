@@ -33,7 +33,7 @@ public class TenantRouteController {
     }
 
     @GetMapping("/routes/{id}")
-    public ResponseEntity<List<RouteResponse>> findById(@PathVariable Long id){
+    public ResponseEntity<RouteResponse> findById(@PathVariable Long id){
         return ResponseEntity.ok(routeService.findById(id));
     }
 
