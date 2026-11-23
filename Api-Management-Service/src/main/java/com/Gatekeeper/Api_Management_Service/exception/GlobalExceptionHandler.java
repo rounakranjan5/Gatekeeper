@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import com.Gatekeeper.Api_Management_Service.dto.responseDto.ErrorResponse
+import com.Gatekeeper.Api_Management_Service.dto.responseDto.ErrorResponse;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
