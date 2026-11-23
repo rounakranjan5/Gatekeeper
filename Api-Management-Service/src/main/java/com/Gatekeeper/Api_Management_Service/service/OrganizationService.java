@@ -31,13 +31,15 @@ public class OrganizationService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final TenantContext tenantContext;
+    private final AuditService auditService;
 
-    public OrganizationService(OrganizationRepository organizationRepository, ManagementUserRepository managementUserRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, TenantContext tenantContext) {
+    public OrganizationService(OrganizationRepository organizationRepository, ManagementUserRepository managementUserRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, TenantContext tenantContext, AuditService auditService) {
         this.organizationRepository = organizationRepository;
         this.managementUserRepository = managementUserRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.tenantContext = tenantContext;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -54,6 +56,10 @@ public class OrganizationService {
         organization.setUpdated_at(LocalDateTime.now());
 
         organizationRepository.save(organization);
+
+        auditService.record(organization, "CREATE_ORGANIZATION", "ORGANIZATION",
+                organization.getId().toString(), startedAt,
+                "Organization created in PENDING status");
 
         return OrganizationResponse.from(organization);
 
@@ -86,6 +92,10 @@ public class OrganizationService {
         organization.setSlug(request.getSlug());
         organization.setUpdated_at(LocalDateTime.now());
 
+        auditService.record(organization, "UPDATE_ORGANIZATION",
+                "ORGANIZATION", id.toString(), startedAt,
+                "Organization name and slug updated");
+
         return OrganizationResponse.from(organization);
 
     }
@@ -103,6 +113,10 @@ public class OrganizationService {
         organization.setStatus(request.getStatus());
         organization.setUpdated_at(LocalDateTime.now());
 
+        auditService.record(organization, "CHANGE_ORGANIZATION_STATUS",
+                "ORGANIZATION", id.toString(),
+                startedAt, "Status changed to " + request.getStatus());
+
         return OrganizationResponse.from(organization);
     }
 
@@ -115,6 +129,11 @@ public class OrganizationService {
         organization.setStatus(OrganizationStatus.DELETED);
         organization.setDeleted_at(LocalDateTime.now());
         organization.setUpdated_at(LocalDateTime.now());
+
+        auditService.record(organization, "DELETE_ORGANIZATION",
+                "ORGANIZATION", id.toString(), startedAt,
+                "Organization soft-deleted");
+
     }
 
     @Transactional
@@ -142,6 +161,10 @@ public class OrganizationService {
         user.setUpdated_at(LocalDateTime.now());
         managementUserRepository.save(user);
 
+        auditService.record(organization, "CREATE_TENANT_ADMIN",
+                "MANAGEMENT_USER", user.getId().toString(),
+                startedAt, "Tenant administrator created");
+
         return TenantAdminResponse.from(user);
 
     }
@@ -165,6 +188,10 @@ public class OrganizationService {
         user.setEnabled(request.isEnabled());
         user.setUpdated_at(LocalDateTime.now());
 
+        auditService.record(user.getOrganization(), "UPDATE_TENANT_ADMIN",
+                "MANAGEMENT_USER", user.getId().toString(), startedAt,
+                "Tenant administrator updated");
+
         return TenantAdminResponse.from(user);
 
     }
@@ -174,6 +201,10 @@ public class OrganizationService {
         long startedAt=System.nanoTime();
 
         ManagementUser user=getTenantAdminEntity(orgId);
+
+        auditService.record(user.getOrganization(), "DELETE_TENANT_ADMIN",
+                "MANAGEMENT_USER", user.getId().toString(), startedAt,
+                "Tenant administrator deleted");
 
         managementUserRepository.delete(user);
 
@@ -202,6 +233,10 @@ public class OrganizationService {
 
         organization.setName(request.getName());
         organization.setUpdated_at(LocalDateTime.now());
+
+        auditService.record(organization, "UPDATE_OWN_ORGANIZATION",
+                "ORGANIZATION", organization.getId().toString(), startedAt,
+                "Tenant updated its organization name");
 
         return OrganizationResponse.from(organization);
 
